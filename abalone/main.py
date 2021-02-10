@@ -1,11 +1,12 @@
+import path
+
 import numpy as np
 import csv
 import os.path
 
 from utils import read_csv, one_hot
 from utils import DataIterator
-from models import SingleLayerPerceptron
-
+from nn.model import SingleLayerPerceptron
 
 
 # hyperparameters
