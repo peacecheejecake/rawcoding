@@ -1,18 +1,8 @@
 import numpy as np
-
-class Linear():
-    def __init__(self, name='lin', xdim=10, ydim=1):
-        self.name = name
-        self.xdim = xdim
-        self.ydim = ydim
+from nn.basic import Module, Linear
 
 
-    def init(self):
-        self.weight = np.random.normal(size=(self.xdim, self.ydim))
-        self.bias = 0
-
-
-class SingleLayerPerceptron():
+class SingleLayerPerceptron(Module):
     '''
     Single Layer Perceptron Class
     '''
