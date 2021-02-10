@@ -32,6 +32,10 @@ def split_train_test(data: np.ndarray, test_ratio=0.1):
     return data[:-test_size], data[-test_size:]
 
 
+def get_table_headers(raw_data):
+    return raw_data[0]
+
+
 class DataIterator():
     def __init__(self, data: np.ndarray, output_dim: int=1, \
         batch_size: int=10, drop_remainder: bool=False):
@@ -49,7 +53,7 @@ class DataIterator():
             self.batch_count = int(len(self.data) / self.batch_size)
 
         self.input_data  = self.data[:, :-self.output_dim]
-        self.output_data = self.data[:, -self.output_dim:].reshape((-1, 1))
+        self.output_data = self.data[:, -self.output_dim:].reshape((-1, self.output_dim))
         
         self.xdim = self.input_data.shape[1]
         self.ydim = self.output_data.shape[1]
