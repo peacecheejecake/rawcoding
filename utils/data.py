@@ -4,7 +4,6 @@ import os.path
 import numpy as np
 
 
-# Arrange data
 def read_csv(filepath: list, filename: str, include_headers: bool=False):
     with open(os.path.join(*filepath, filename)) as f:
         csv_reader = csv.reader(f)
@@ -26,6 +25,11 @@ def one_hot(data: np.ndarray, column_nums: list):
         data = np.concatenate((data[:, :column_num], one_hot_matrix, \
             data[:, column_num + 1:]), axis=1)
     return data.astype(np.float64)
+
+
+def split_train_test(data: np.ndarray, test_ratio=0.1):
+    test_size = int(len(data) * test_ratio)
+    return data[:-test_size], data[-test_size:]
 
 
 class DataIterator():

@@ -1,8 +1,8 @@
 import numpy as np
 
 from path import *
-from utils import read_csv, one_hot
-from utils import DataIterator
+import utils.data as dh
+from utils.data import DataIterator
 from nn.model import SingleLayerPerceptron
 
 
@@ -12,17 +12,13 @@ data_path = ['..', 'data']
 data_file_name = 'abalone.csv'
 
 
-def load_abalone_dataset(test_ratio=0.1):
-    raw_data = read_csv(data_path, data_file_name, False)
-    data = one_hot(raw_data, [0]).astype(np.float64)
-    test_size = int(data.shape[0] * test_ratio)
-    return data[:-test_size], data[-test_size:]
-
-
 def main(lr=1e-3, epochs=10, batch_size=10, test_ratio=0.1, test_size=50, \
         title_width=40, report_every=1):
     # data arrangement
-    train_data, test_data = load_abalone_dataset(test_ratio=test_ratio)
+    raw_data = dh.read_csv(data_path, data_file_name, False)
+    data = dh.one_hot(raw_data, [0]).astype(np.float64)
+    train_data, test_data = dh.split_train_test(test_ratio=test_ratio)
+
     train_iter = DataIterator(data=train_data, output_dim=output_cols, \
         batch_size=batch_size)
     test_iter  = DataIterator(data=test_data, output_dim=output_cols, \
