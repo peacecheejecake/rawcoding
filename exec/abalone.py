@@ -1,80 +1,66 @@
+import os.path
 import numpy as np
 
 from path import *
-import utils.data as dh
+
+import utils.data
 from utils.data import DataIterator
-from nn.model import SingleLayerPerceptron
+
+from nn.models import SingleLayerPerceptron
+from nn.loss import Loss, RMSE
+from nn.basic import Module
+import nn.eval
+
+from basic import Executer
 
 
-# data chracteristics
-output_cols = 1
-data_path = ['..', 'data']
-data_file_name = 'abalone.csv'
+class AbaloneExecuter(Executer):
+    def __init__(self, train_iter: DataIterator=None, test_iter: DataIterator=None, \
+        model: Module=None, loss: Loss=None, title_width: int=40, title_fillchar: str='='):
+        self.train_iter = train_iter
+        self.test_iter = test_iter
+        self.model = model
+        self.loss = loss
+        self.title_width = title_width
+        self.title_fillchar = title_fillchar
 
 
-def main(lr=1e-3, epochs=10, batch_size=10, test_ratio=0.1, test_size=50, \
-        title_width=40, report_every=1):
+    def arrange_data(self, data_path: str, test_ratio: float=0.1, batch_size: int=10, output_cols: int=1):
+        raw_data = utils.data.read_csv(data_path, False)
+        data = utils.data.one_hot(raw_data, [0]).astype(np.float64)
+        train_data, test_data = utils.data.split_train_test(data=data, test_ratio=test_ratio)
+
+        self.train_iter = DataIterator(data=train_data, output_dim=output_cols, \
+            batch_size=batch_size, drop_remainder=False)
+        self.test_iter  = DataIterator(data=train_data, output_dim=output_cols, \
+            batch_size=batch_size, drop_remainder=False)
+
+
+    def construct_model(self, model_name='abalone_regressor'):
+        self.loss = RMSE()
+        self.model = SingleLayerPerceptron(name=model_name, \
+            xdim=self.train_iter.xdim, ydim=self.train_iter.ydim, \
+            loss=self.loss, activ_func=None, eval_func=nn.eval.error_ratio_batch_sum)
+        self.model.init()
+
+
+def main():
+    # make an executer and start program
+    executer = AbaloneExecuter()
+
     # data arrangement
-    raw_data = dh.read_csv(data_path, data_file_name, False)
-    data = dh.one_hot(raw_data, [0]).astype(np.float64)
-    train_data, test_data = dh.split_train_test(test_ratio=test_ratio)
-
-    train_iter = DataIterator(data=train_data, output_dim=output_cols, \
-        batch_size=batch_size)
-    test_iter  = DataIterator(data=test_data, output_dim=output_cols, \
-        batch_size=batch_size)
-
-    # create a model & initialize parameters
-    Model = SingleLayerPerceptron(name='slp', xdim=train_iter.xdim, ydim=train_iter.ydim)
-    Model.init_parameters()
-
-    # first evaluation before training
-    print(" Initial Evaluation Accuracy ".center(title_width, '='))
-    print(f"Train Accuracy: [{Model.evaluate(train_iter)}], \
-Test Accuracy: [{Model.evaluate(test_iter)}]", end='\n\n')
-
-    # train
-    print(" Start of Training ".center(title_width, '='))
-    for epoch in range(1, epochs + 1):
-        loss_epoch_sum = 0
-        for batch_in, batch_out in train_iter:
-            loss_epoch_sum += Model.backward(batch_in, batch_out, lr)
-        loss = loss_epoch_sum / len(train_data)
-
-        train_accuracy = Model.evaluate(train_iter)
-        test_accuracy = Model.evaluate(test_iter)
-        if epoch % report_every == 0 and epoch != epochs:
-            print(f"Epoch[{str(epoch).rjust(2)}] --- Loss: [{loss:.3f}],", \
-                  f"Train Accuracy: [{train_accuracy:.3f}]," \
-                  f"Test Accuracy: [{test_accuracy:.3f}]")
-
-    print("End of Training.", end='\n\n')
-
+    data_path = os.path.join('..', 'data', 'abalone.csv')
+    executer.arrange_data(data_path=data_path)
+    
+    executer.construct_model()                                          # create a model and initialize
+    executer.first_eval()                                               # first evaluation before training
+    executer.train_model(epochs=100, lr=1e-3, report_every=10)          # train model
 
     # final test
-    print(" Test ".center(title_width, '='))
+    executer.show_sample_result(cal_size=len(executer.test_iter), label_dtype=np.int64)  # sample results
+    executer.final_eval()          # accuracy
 
-    batch_in, batch_out = next(test_iter._reset(test_size))
-    predictions = Model.forward(batch_in)
-    correct_count = 0
-    for prediction, answer in zip(np.round(predictions), batch_out.astype(np.int64)):
-        if prediction == answer:
-            is_correct = "Correct!"
-            correct_count += 1
-        else:
-            is_correct = "Wrong!"
-        print(f"{is_correct.ljust(8)}   Predicted: {str(prediction.item()).rjust(2)}, \
-Answer: {str(answer.item()).rjust(2)}")
-    print(f"> Correct Ratio:  [{correct_count / test_size:.5f}]")
-    print(f"  Train Accuracy: [{Model.evaluate(train_iter):.5f}], \
-Test Accuracy: [{Model.evaluate(test_iter):.5f}]", end='\n\n')
-
-
-    # weights and bias
-    print(" Parameters ".center(title_width, '='))
-    print(f"Weights: {Model.linear.weight.reshape(-1)}")
-    print(f"Bias: {Model.linear.bias.reshape(-1)}")
-    print()
+    executer.check_parameters()    # check parameters
 
 
 if __name__ == '__main__':

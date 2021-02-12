@@ -1,11 +1,9 @@
 import csv
-import os.path
-
 import numpy as np
 
 
-def read_csv(filepath: list, filename: str, include_headers: bool=False):
-    with open(os.path.join(*filepath, filename)) as f:
+def read_csv(filepath: str, include_headers: bool=False):
+    with open(filepath) as f:
         csv_reader = csv.reader(f)
         if not include_headers:
             next(csv_reader)
@@ -39,7 +37,6 @@ def get_table_headers(raw_data):
 class DataIterator():
     def __init__(self, data: np.ndarray, output_dim: int=1, \
         batch_size: int=10, drop_remainder: bool=False):
-        
         self.data = data
         self.output_dim = output_dim
         self.batch_size = batch_size
@@ -54,7 +51,7 @@ class DataIterator():
 
         self.input_data  = self.data[:, :-self.output_dim]
         self.output_data = self.data[:, -self.output_dim:].reshape((-1, self.output_dim))
-        
+
         self.xdim = self.input_data.shape[1]
         self.ydim = self.output_data.shape[1]
 
