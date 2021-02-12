@@ -1,12 +1,9 @@
 import csv
-import os.path
-
 import numpy as np
 
 
-# Arrange data
-def read_csv(filepath: list, filename: str, include_headers: bool=False):
-    with open(os.path.join(*filepath, filename)) as f:
+def read_csv(filepath: str, include_headers: bool=False):
+    with open(filepath) as f:
         csv_reader = csv.reader(f)
         if not include_headers:
             next(csv_reader)
@@ -28,10 +25,18 @@ def one_hot(data: np.ndarray, column_nums: list):
     return data.astype(np.float64)
 
 
+def split_train_test(data: np.ndarray, test_ratio=0.1):
+    test_size = int(len(data) * test_ratio)
+    return data[:-test_size], data[-test_size:]
+
+
+def get_table_headers(raw_data):
+    return raw_data[0]
+
+
 class DataIterator():
     def __init__(self, data: np.ndarray, output_dim: int=1, \
         batch_size: int=10, drop_remainder: bool=False):
-        
         self.data = data
         self.output_dim = output_dim
         self.batch_size = batch_size
@@ -45,8 +50,8 @@ class DataIterator():
             self.batch_count = int(len(self.data) / self.batch_size)
 
         self.input_data  = self.data[:, :-self.output_dim]
-        self.output_data = self.data[:, -self.output_dim:].reshape((-1, 1))
-        
+        self.output_data = self.data[:, -self.output_dim:].reshape((-1, self.output_dim))
+
         self.xdim = self.input_data.shape[1]
         self.ydim = self.output_data.shape[1]
 
